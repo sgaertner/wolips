@@ -58,7 +58,9 @@ package org.objectstyle.wolips.bindings.api;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.eclipse.core.runtime.Platform;
 import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
 
 public abstract class AbstractNamedValidation extends AbstractApiModelElement implements IValidation {
 
@@ -66,6 +68,29 @@ public abstract class AbstractNamedValidation extends AbstractApiModelElement im
 
   protected AbstractNamedValidation(Element element, ApiModel apiModel) {
     super(element, apiModel);
+    checkName();
+  }
+
+  private void checkName() {
+    String nameForCheck = getName();
+    if (nameForCheck == null || nameForCheck.length() == 0) {
+      Platform.getLog(getClass()).warn("Empty name for " + getClass().getSimpleName() + " from " + apiModel.getLocation() + ", XML path: " + elementPath(element), new Throwable());
+    }
+  }
+
+  private static String elementPath(Element element) {
+    StringBuilder sb = new StringBuilder();
+    if (element.getParentNode() instanceof Element) {
+      sb.append(elementPath((Element) element.getParentNode())).append(" → ");
+    }
+    sb.append('<').append(element.getNodeName());
+    NamedNodeMap attributes = element.getAttributes();
+    for (int i = 0; i < attributes.getLength(); i++) {
+      sb.append(' ');
+      sb.append(attributes.item(i));
+    }
+    sb.append('>');
+    return sb.toString();
   }
 
   public String getName() {
@@ -77,6 +102,7 @@ public abstract class AbstractNamedValidation extends AbstractApiModelElement im
   public void setName(String className) {
     synchronized (this) {
       element.setAttribute(NAME, className);
+      checkName();
     }
   }
 
