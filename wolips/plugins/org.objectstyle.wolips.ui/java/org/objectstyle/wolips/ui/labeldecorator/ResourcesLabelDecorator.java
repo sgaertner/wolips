@@ -90,11 +90,11 @@ public class ResourcesLabelDecorator implements ILabelDecorator {
 	}
 
 	private Image resourcesImage(Image image) {
-		return createImageWithName(image, "resources_overlay.gif");
+		return createImageWithName(image, "resources_overlay.png");
 	}
 
 	private Image webServerResourcesImage(Image image) {
-		return createImageWithName(image, "webserverresources_overlay.gif");
+		return createImageWithName(image, "webserverresources_overlay.png");
 	}
 
 	public Image decorateImage(Image image, Object element) {
@@ -170,9 +170,9 @@ public class ResourcesLabelDecorator implements ILabelDecorator {
 
 		private String overlayImageFilename;
 
-		private ImageData baseImageData;
+		private CachedImageDataProvider baseImageDataProvider;
 
-		private ImageData overlayImageData;
+		private CachedImageDataProvider overlayImageDataProvider;
 
 		private Point size;
 
@@ -186,13 +186,14 @@ public class ResourcesLabelDecorator implements ILabelDecorator {
 			super();
 			if (image != null) {
 				this.baseImage = image;
-				this.baseImageData = image.getImageData();
-				this.size = new Point(this.baseImageData.width, this.baseImageData.height);
+				this.baseImageDataProvider = createCachedImageDataProvider(image);
+				this.size = new Point(image.getBounds().width, image.getBounds().height);
 			}
 			this.overlayImageFilename = overlayImageFilename;
-			this.overlayImageData = ImageDescriptor.createFromFile(ResourcesLabelDecorator.class, overlayImageFilename).getImageData();
+			this.overlayImageDataProvider = createCachedImageDataProvider(ImageDescriptor.createFromFile(ResourcesLabelDecorator.class, overlayImageFilename));
 			if (this.size == null) {
-				this.size = new Point(this.overlayImageData.width, this.overlayImageData.height);
+				ImageData overlayImageData = this.overlayImageDataProvider.getImageData(100);
+				this.size = new Point(overlayImageData.width, overlayImageData.height);
 			}
 		}
 
@@ -202,14 +203,12 @@ public class ResourcesLabelDecorator implements ILabelDecorator {
 		 */
 		protected void drawCompositeImage(int width, int height) {
 			// draw base image
-			if (this.baseImageData != null) {
-				this.drawImage(this.baseImageData, 0, 0);
+			if (this.baseImageDataProvider != null) {
+				this.drawImage(this.baseImageDataProvider, 0, 0);
 			}
 			int x = getSize().x;
-			x -= this.overlayImageData.width;
-			int y = getSize().y;
-			y -= this.overlayImageData.height;
-			this.drawImage(this.overlayImageData, x, 0);
+			x -= this.overlayImageDataProvider.getWidth();
+			this.drawImage(this.overlayImageDataProvider, x, 0);
 		}
 
 		/**
