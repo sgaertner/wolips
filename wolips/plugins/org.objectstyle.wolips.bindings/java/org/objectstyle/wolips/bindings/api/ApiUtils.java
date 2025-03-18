@@ -37,6 +37,9 @@ import org.objectstyle.wolips.locate.result.LocalizedComponentsLocateResult;
 import org.osgi.framework.Bundle;
 
 public class ApiUtils {
+
+  private static final Object globalApiModelLoadingLock = new Object();
+
   private static ApiModel _globalApiModel;
 
   public static boolean isActionBinding(IApiBinding binding) {
@@ -88,16 +91,20 @@ public class ApiUtils {
           ApiModel apiModel = null;
           try {
             if (elementType.getFullyQualifiedName().startsWith("com.webobjects.appserver._private.")) {
-              if (_globalApiModel == null) {
-                Bundle bundle = Activator.getDefault().getBundle();
-                URL woDefinitionsURL = bundle.getEntry("/WebObjectDefinitions.xml");
-                if (woDefinitionsURL != null) {
-                  apiModel = new ApiModel(woDefinitionsURL);
+              // This block is sometimes called multiple times in parallel.
+              // Prevent parsing the XML multiple times:
+              synchronized (globalApiModelLoadingLock) {
+                if (_globalApiModel == null) {
+                  Bundle bundle = Activator.getDefault().getBundle();
+                  URL woDefinitionsURL = bundle.getEntry("/WebObjectDefinitions.xml");
+                  if (woDefinitionsURL != null) {
+                    apiModel = new ApiModel(woDefinitionsURL);
+                  }
+                  _globalApiModel = apiModel;
                 }
-                _globalApiModel = apiModel;
-              }
-              else {
-                apiModel = _globalApiModel;
+                else {
+                  apiModel = _globalApiModel;
+                }
               }
             }
             else {
